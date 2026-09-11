@@ -1,0 +1,34 @@
+{
+  "name": "pstack",
+  "version": "0.15.0",
+  "description": "if you want to go fast, go deep first. pstack helps you write less, but higher quality code. rigorous agent workflows you can parallelize with confidence. Third-party plugin by Lauren Tan, ported from Cursor.",
+  "author": {
+    "name": "Lauren Tan"
+  },
+  "homepage": "https://github.com/cursor/plugins/tree/main/pstack",
+  "repository": "https://github.com/cursor/plugins",
+  "license": "MIT",
+  "keywords": [
+    "pstack",
+    "poteto-mode",
+    "workflow",
+    "principles",
+    "code-review",
+    "tdd",
+    "unslop"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "pstack",
+    "shortDescription": "Rigorous engineering workflows: playbooks, principles, and review skills.",
+    "longDescription": "A set of rigorous engineering-workflow skills: poteto-mode's 23 playbooks (bug fixes, features, refactors, migrations, autonomous runs), review and investigation skills (how, why, interrogate, architect, arena, swarm), and 23 named engineering principles (root causes, type-system discipline, idempotent operations, and more). Ported from Cursor's pstack plugin.",
+    "developerName": "Lauren Tan",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": "Use the appropriate pstack skill for this task, or poteto-mode if unsure which one fits."
+  }
+}
