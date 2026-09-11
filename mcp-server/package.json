@@ -1,0 +1,24 @@
+{
+  "name": "pstack-mcp-server",
+  "version": "0.15.0",
+  "private": true,
+  "description": "pstack's engineering-workflow skills, exposed as MCP tools for ChatGPT (Apps SDK) and other MCP clients.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build-content": "node scripts/bundle-skills.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "agents": "^0.0.100",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "typescript": "^5.6.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260910.1": true
+  }
+}
