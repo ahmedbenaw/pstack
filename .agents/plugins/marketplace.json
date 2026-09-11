@@ -1,0 +1,20 @@
+{
+  "name": "pstack",
+  "interface": {
+    "displayName": "pstack"
+  },
+  "plugins": [
+    {
+      "name": "pstack",
+      "source": {
+        "source": "local",
+        "path": "."
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
