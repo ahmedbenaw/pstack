@@ -1,0 +1,15 @@
+{
+  "name": "pstack",
+  "owner": { "name": "Lauren Tan" },
+  "plugins": [
+    {
+      "name": "pstack",
+      "description": "if you want to go fast, go deep first. pstack helps you write less, but higher quality code. rigorous agent workflows you can parallelize with confidence. Third-party plugin by Lauren Tan, ported from Cursor to Claude Code.",
+      "version": "0.15.0",
+      "author": { "name": "Lauren Tan" },
+      "source": ".",
+      "category": "development",
+      "homepage": "https://github.com/cursor/plugins/tree/main/pstack"
+    }
+  ]
+}
