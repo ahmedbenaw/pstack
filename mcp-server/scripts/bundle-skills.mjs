@@ -5,23 +5,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { frontmatterField } from "./lib.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pstackRoot = path.resolve(here, "..", "..");
 const skillsRoot = path.join(pstackRoot, "skills");
 const agentsRoot = path.join(pstackRoot, "agents");
 const outFile = path.join(here, "..", "src", "content.generated.ts");
-
-function frontmatterField(text, field) {
-  const match = text.match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
-  if (!match) return "";
-  const value = match[1].trim();
-  // YAML frontmatter values are sometimes quoted (e.g. `description: "..."`)
-  // and sometimes not - strip a matching pair of quotes if present so callers
-  // always get the plain text, not the literal quote characters.
-  const quoted = value.match(/^(["'])(.*)\1$/);
-  return quoted ? quoted[2] : value;
-}
 
 function readTextFilesRecursive(dir, relativeTo) {
   const out = {};

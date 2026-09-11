@@ -9,8 +9,12 @@ import { SKILLS, AGENTS } from "./content.generated";
 // them itself - the tool returns text for the calling model to act on, it does
 // not execute pstack's methodology on the server's behalf.
 type State = Record<string, never>;
+// No per-connection auth props - this server has no authentication (see
+// README's security note). Record<string, never> means "no props", unlike
+// `{}` which TypeScript would accept any non-nullish value for.
+type Props = Record<string, never>;
 
-export class PstackMCP extends McpAgent<Env, State, {}> {
+export class PstackMCP extends McpAgent<Env, State, Props> {
   server = new McpServer({ name: "pstack", version: "0.15.0" });
   initialState: State = {};
 
@@ -47,7 +51,13 @@ export class PstackMCP extends McpAgent<Env, State, {}> {
       {
         description:
           "Fetch the full instructions for one named pstack skill (its SKILL.md plus any reference/playbook files). Follow the returned instructions yourself - this tool returns text, it does not execute anything. Start with 'poteto-mode' if you're unsure which skill fits a task; its own instructions route to the other 46.",
-        inputSchema: { name: z.string().describe("Skill name, e.g. 'poteto-mode', 'how', 'tdd'. Call list_pstack_skills first if unsure of exact names.") },
+        inputSchema: {
+          name: z
+            .string()
+            .describe(
+              "Skill name, e.g. 'poteto-mode', 'how', 'tdd'. Call list_pstack_skills first if unsure of exact names."
+            ),
+        },
       },
       async ({ name }) => {
         const skill = SKILLS[name];
@@ -76,14 +86,18 @@ export class PstackMCP extends McpAgent<Env, State, {}> {
       {
         description:
           "Fetch the full definition of one named pstack subagent (poteto-agent or comment-sicko). These describe a persona/behavior mode to adopt, not a tool this server executes - read the returned text and act in that style yourself.",
-        inputSchema: { name: z.string().describe("Agent name: 'poteto-agent' or 'comment-sicko'.") },
+        inputSchema: {
+          name: z.string().describe("Agent name: 'poteto-agent' or 'comment-sicko'."),
+        },
       },
       async ({ name }) => {
         const agent = AGENTS[name];
         if (!agent) {
           const names = Object.keys(AGENTS).sort().join(", ");
           return {
-            content: [{ type: "text", text: `No pstack agent named "${name}". Available: ${names}` }],
+            content: [
+              { type: "text", text: `No pstack agent named "${name}". Available: ${names}` },
+            ],
             isError: true,
           };
         }
