@@ -1,0 +1,18 @@
+{
+  "name": "pstack",
+  "private": true,
+  "description": "Formatter/linter/test tooling for this repo's own authored content (mcp-server/). Upstream-ported content (skills/, agents/, docs/, automations/, assets/) is intentionally excluded - see CONTRIBUTING.md.",
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "node --test mcp-server/**/*.test.mjs"
+  },
+  "devDependencies": {
+    "eslint": "^9.15.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.4.0",
+    "typescript-eslint": "^8.70.0"
+  }
+}

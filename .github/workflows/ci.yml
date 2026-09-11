@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-format-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install root tooling
+        run: npm install --no-audit --no-fund
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Install mcp-server dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: mcp-server
+
+      - name: Regenerate Workers types (keeps them honest against wrangler.jsonc)
+        run: npx wrangler types
+        working-directory: mcp-server
+
+      - name: Typecheck mcp-server
+        run: npx tsc --noEmit
+        working-directory: mcp-server

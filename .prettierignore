@@ -1,0 +1,21 @@
+# Upstream-ported content - fidelity to source matters more than local style.
+skills/
+agents/
+docs/
+automations/
+assets/
+README.md
+LICENSE
+
+# Generated, not hand-authored.
+mcp-server/src/content.generated.ts
+mcp-server/worker-configuration.d.ts
+
+# Build/dependency artifacts.
+node_modules/
+.wrangler/
+package-lock.json
+*.lock
+
+# Markdown prose/reports (not code) - out of scope for a code formatter.
+*.md
