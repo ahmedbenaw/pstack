@@ -33,7 +33,7 @@ Tell the user to do this:
 4. Copy the webhook URL. The user may paste the URL in chat.
 5. Copy the sender key. The user must not paste the sender key in chat.
 
-The URL looks like `https://api2.cursor.sh/automations/webhook/<id>` with no query string. Copy the URL from the routine. Do not guess the id.
+On Cursor the URL looks like `https://api2.cursor.sh/automations/webhook/<id>` with no query string. Copy the URL from the routine; do not guess the id. Off Cursor there is no hosted automation webhook to point at, so take the endpoint from whatever the bot actually posts to and say plainly in the UI which backend it targets.
 
 ## Request the sender key
 
