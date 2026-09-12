@@ -22,9 +22,15 @@ prs=$(mktemp)
 gh pr list --author "@me" --state all --limit 1000 \
 	--json number,state,headRefName 2>/dev/null > "$prs" || echo "[]" > "$prs"
 
-# Transcripts dir: ~/.cursor/projects/<slugified-repo-path>/agent-transcripts.
-slug=$(printf '%s' "$main_wt" | sed 's#^/##; s#/#-#g')
-transcripts="$HOME/.cursor/projects/$slug/agent-transcripts"
+# Transcripts dir, by host. Claude Code and Cowork slugify every non-alphanumeric
+# character and store the chats flat; Cursor drops the leading slash and nests them
+# under agent-transcripts/. Only the root differs, since the search below recurses.
+cc_slug=$(printf '%s' "$main_wt" | sed 's#[^a-zA-Z0-9]#-#g')
+cursor_slug=$(printf '%s' "$main_wt" | sed 's#^/##; s#/#-#g')
+transcripts="$HOME/.claude/projects/$cc_slug"
+if [ ! -d "$transcripts" ] && [ -d "$HOME/.cursor/projects/$cursor_slug/agent-transcripts" ]; then
+	transcripts="$HOME/.cursor/projects/$cursor_slug/agent-transcripts"
+fi
 now=$(date +%s)
 
 printf "SIZE\tAGE\tMERGED\tDIRTY\tREMOTE\tPR\tLAST_CHAT\tBUCKET\tWORKTREE\n"
