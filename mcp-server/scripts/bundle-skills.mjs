@@ -5,26 +5,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { frontmatterField } from "./lib.mjs";
+import { frontmatterField, readTextFilesRecursive } from "./lib.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pstackRoot = path.resolve(here, "..", "..");
 const skillsRoot = path.join(pstackRoot, "skills");
 const agentsRoot = path.join(pstackRoot, "agents");
 const outFile = path.join(here, "..", "src", "content.generated.ts");
-
-function readTextFilesRecursive(dir, relativeTo) {
-  const out = {};
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      Object.assign(out, readTextFilesRecursive(full, relativeTo));
-    } else if (/\.(md|tsv|sh|mjs|ts)$/.test(entry.name)) {
-      out[path.relative(relativeTo, full)] = fs.readFileSync(full, "utf8");
-    }
-  }
-  return out;
-}
 
 const skills = {};
 for (const name of fs.readdirSync(skillsRoot).sort()) {
