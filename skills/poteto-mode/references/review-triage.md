@@ -1,10 +1,12 @@
-# Bugbot triage
+# Automated review triage
 
-Use this reference when the Babysit playbook (`../playbooks/babysit.md`) handles Bugbot or review-automation comments. The goal is not to ignore Bugbot by default. The goal is to stop treating every comment as a required code change.
+Use this reference when the Babysit playbook (`../playbooks/babysit.md`) handles comments from an automated reviewer: a review bot on the PR (Cursor's Bugbot, Copilot, CodeRabbit and the like) or a review you ran yourself, such as `/code-review`. The goal is not to ignore the reviewer by default. The goal is to stop treating every comment as a required code change.
+
+The rubric below is about the *claim*, not about who filed it, so it applies whichever reviewer produced the comment. The one thing that differs by source: a bot posts under its own login and the watcher can label the thread, while `/code-review` posts under your own account and looks like any other comment, so you apply this yourself rather than expecting it to be flagged.
 
 ## Decision rubric
 
-Classify each Bugbot thread before acting:
+Classify each automated-review thread before acting:
 
 - `fix`: The comment identifies a plausible correctness, security, privacy, data loss, auth, billing, migration, idempotency, race, or shipped-behavior issue. Fix it in the lowest owning PR, then reply with the commit SHA and resolve the thread.
 - `dismiss`: The comment matches a documented low-risk noisy pattern, and the current code/context proves the concern does not need a code change. Reply with a short reason and resolve the thread.
@@ -33,14 +35,14 @@ Use `candidate` for one or two examples. Use `recurring` after multiple real dis
 ### Intentional UI or design-system visual changes
 
 - Confidence: candidate
-- Skip when: The PR description, screenshots, design review, or nearby code makes the visual change explicit, and the Bugbot comment is only restating that a shared visual default changed.
+- Skip when: The PR description, screenshots, design review, or nearby code makes the visual change explicit, and the comment is only restating that a shared visual default changed.
 - Do not skip when: The comment points to accessibility, focus visibility, keyboard navigation, color contrast, or a component API contract that the PR did not intentionally change.
 - Example signal: Comments about focus outlines, button sizes, spacing, or shared component visual defaults where the owner replies "intentional" or "intended".
 
-### Upstack or stack-local usage Bugbot cannot see
+### Upstack or stack-local usage the reviewer cannot see
 
 - Confidence: candidate
-- Skip when: Bugbot flags an export, component, helper, or file as unused, and the active forge's PR list and diffs, upper-stack diffs, or PR context show it is used by a later PR in the stack.
+- Skip when: the reviewer flags an export, component, helper, or file as unused, and the active forge's PR list and diffs, upper-stack diffs, or PR context show it is used by a later PR in the stack.
 - Do not skip when: The current PR is not part of a stack, the symbol is public API, or the supposed upstack use cannot be verified.
 - Example signal: "Exported component is never used" with a human reply like "used upstack".
 
@@ -68,7 +70,7 @@ Use `candidate` for one or two examples. Use `recurring` after multiple real dis
 ### Self-withdrawn or explicit false-positive rule comments
 
 - Confidence: recurring
-- Skip when: The comment body or a later Bugbot reply explicitly says the finding is withdrawn, compliant, or a false positive, and the agent can verify the relevant rule locally.
+- Skip when: The comment body or a later reply from the reviewer explicitly says the finding is withdrawn, compliant, or a false positive, and the agent can verify the relevant rule locally.
 - Do not skip when: The only evidence is a human saying "false positive" on a high-risk issue without explanation.
 - Example signal: A file-naming rule comment whose body says the file is already compliant.
 
@@ -100,7 +102,7 @@ Append new candidate learnings here during or after babysitting when they look t
 - Confidence: candidate
 - Skip when: Never skip the verification itself; it costs one command. When a PR
   ships a contract test that pins protocol or documentation prose (regexes over
-  a SKILL.md, snapshot of doc wording), and Bugbot claims "the test no longer
+  a SKILL.md, snapshot of doc wording), and the reviewer claims "the test no longer
   matches the doc" (or vice versa), run that test on the PR tip before
   classifying. A red run confirms the claim empirically; a green run is a
   concrete disproof for the dismissal reply.

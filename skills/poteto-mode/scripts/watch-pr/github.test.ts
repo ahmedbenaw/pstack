@@ -192,7 +192,7 @@ describe("closed enum parsing", () => {
   });
 });
 
-it("annotates Bugbot threads with distinct review-pass counts", () => {
+it("annotates automated-review threads with distinct review-pass counts", () => {
   const response = {
     data: {
       repository: {
@@ -252,8 +252,37 @@ it("annotates Bugbot threads with distinct review-pass counts", () => {
   };
   const threads = parseReviewThreads(response);
   expect(threads).toHaveLength(2);
-  expect(threads.map((thread) => thread.isBugbot)).toEqual([true, true]);
-  expect(threads.map((thread) => thread.bugbotReviewPasses)).toEqual([3, 3]);
+  expect(threads.map((thread) => thread.isAutomatedReview)).toEqual([true, true]);
+  expect(threads.map((thread) => thread.reviewPasses)).toEqual([3, 3]);
+});
+
+it("recognises review bots other than Bugbot, and leaves human threads alone", () => {
+  const thread = (id: string, login: string, body: string) => ({
+    id,
+    isResolved: false,
+    comments: {
+      nodes: [{ body, createdAt: "now", path: "a.ts", line: 1, author: { login } }],
+    },
+  });
+  const response = {
+    data: {
+      repository: {
+        pullRequest: {
+          reviewThreads: {
+            nodes: [
+              thread("rabbit", "coderabbitai[bot]", "RUN_ID: run-1 potential null deref"),
+              thread("copilot", "copilot-pull-request-reviewer", "unchecked index"),
+              thread("human", "ben", "RUN_ID: run-2 I think this is wrong"),
+            ],
+          },
+        },
+      },
+    },
+  };
+  const threads = parseReviewThreads(response);
+  expect(threads.map((t) => t.isAutomatedReview)).toEqual([true, true, false]);
+  // Only the bot threads carry a pass key, so the human comment does not inflate the count.
+  expect(threads.map((t) => t.reviewPasses)).toEqual([1, 1, 1]);
 });
 
 describe("context and stack discovery", () => {

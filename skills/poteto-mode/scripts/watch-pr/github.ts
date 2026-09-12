@@ -330,12 +330,25 @@ function parseComment(value: unknown): T.ReviewComment {
     createdAt: string(object.createdAt, "review comment.createdAt"),
   };
 }
-function isBugbot(comment: T.ReviewComment | null): boolean {
+// Logins that identify an automated code reviewer. Bugbot is Cursor's; the rest are
+// the reviewers a repo is likely to meet on GitHub. A review posted by `/code-review`
+// arrives under the human's own login and is deliberately not matched here: triage it
+// the same way, but the watcher cannot tell it apart from a person's comment.
+const REVIEW_BOT_LOGINS = [
+  "bugbot",
+  "copilot",
+  "coderabbit",
+  "sonarcloud",
+  "sonarqubecloud",
+  "codacy",
+  "deepsource",
+] as const;
+function isAutomatedReview(comment: T.ReviewComment | null): boolean {
   if (comment === null) return false;
   const author = (comment.authorLogin ?? "").toLowerCase();
   const body = comment.body.toLowerCase();
   return (
-    author.includes("bugbot") ||
+    REVIEW_BOT_LOGINS.some((bot) => author.includes(bot)) ||
     (author === "cursor" &&
       [
         "bugbot",
@@ -384,7 +397,7 @@ export function parseReviewThreads(value: unknown): readonly T.ReviewThread[] {
   const keys = new Set<string>();
   let keyless = false;
   for (const thread of threads) {
-    if (!isBugbot(thread.firstComment)) continue;
+    if (!isAutomatedReview(thread.firstComment)) continue;
     const key = passKey(thread.firstComment);
     if (key === null) keyless = true;
     else keys.add(key);
@@ -395,8 +408,8 @@ export function parseReviewThreads(value: unknown): readonly T.ReviewThread[] {
     .map(({ id, firstComment }) => ({
       id,
       firstComment,
-      isBugbot: isBugbot(firstComment),
-      bugbotReviewPasses: passes,
+      isAutomatedReview: isAutomatedReview(firstComment),
+      reviewPasses: passes,
     }));
 }
 export function parsePullRequest(

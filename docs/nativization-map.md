@@ -37,26 +37,21 @@ Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-ser
 | 10 | `/loop` (Cursor built-in) | 11 | Claude Code ships a native `/loop`. Codex/GPT equivalence **unverified** | ✅ | ? | ❌ | ? | **partial** |
 | 11 | Cursor cloud agents / parallel subagent fan-out (`swarm`, `arena`, `architect`, `interrogate`, autopilot playbooks) | 3+ | Claude Code `Agent` tool. No subagent spawn from the MCP connector | ✅ | ~ | ❌ | ✅ | **partial** |
 | 12 | `automations/benny/` — Cursor-hosted automation runner (`.cursor/automations/benny/`, `.cursor/benny/routing.md`, `feature-map.md`) | 8 | No host-managed automation runner. Nearest: scheduled tasks / cron | ~ | ❌ | ❌ | ~ | **partial** |
-| 13 | **Bugbot** review triage (`references/bugbot-triage.md`, and `scripts/watch-pr/` types, render, github clients + tests) | 11 | **None.** Nearest in kind is `/code-review`, which is not the same product and emits a different shape | ❌ | ❌ | ❌ | ❌ | **compromise** |
+| 13 | **Bugbot** review triage (`references/bugbot-triage.md`, and `scripts/watch-pr/` types, render, github clients + tests) | 11 | Generalized to *automated review*, per Ben's decision. `references/review-triage.md` keeps the rubric, which judges the claim rather than the filer, and `watch-pr` renames `isBugbot`/`bugbotReviewPasses` to `isAutomatedReview`/`reviewPasses` and now detects Copilot, CodeRabbit, Sonar, Codacy and DeepSource alongside Bugbot. Caveat: `/code-review --comment` posts under the human's own login, so the watcher cannot label it; the doc says to apply the rubric by hand there | ✅ | ✅ | ~ | ✅ | **port** |
 
-## The three rows that cannot be closed
+## The rows that cannot be closed
 
-Everything marked **port** above is mechanical and loses nothing. These do not
-close, and saying otherwise would be false:
+Everything marked **port** above is mechanical and loses nothing. Row 13 was a
+compromise until Ben chose to retarget it; the two below do not close, and saying
+otherwise would be false:
 
-1. **Bugbot (row 13).** It is a Cursor product. `skills/poteto-mode/scripts/watch-pr/`
-   is a working TypeScript CLI with tests that parses Bugbot review comments — real
-   code, not prose. There is no equivalent to point it at. The options are: leave it
-   as a documented Cursor-only path; retarget it at `/code-review` and accept a
-   different output contract; or delete it. That is a product decision.
-
-2. **Parallel subagents on the ChatGPT connector (row 11).** The MCP server exposes
+1. **Parallel subagents on the ChatGPT connector (row 11).** The MCP server exposes
    three read-only tools; it cannot spawn agents. Every playbook whose core move is
    "fan out N verifiers" — `swarm`, `arena`, `architect`, `interrogate`, both
    autopilots — is inherently degraded there. No amount of porting changes this;
    it is a property of the host.
 
-3. **The benny automation (row 12).** It assumes a Cursor-hosted runner that
+2. **The benny automation (row 12).** It assumes a Cursor-hosted runner that
    watches a repo and dispatches agents. Claude Code has scheduled tasks, which is
    adjacent but not the same execution model.
 
