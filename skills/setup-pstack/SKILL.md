@@ -1,11 +1,11 @@
 ---
 name: setup-pstack
-description: Configure which models pstack uses per role. Detects your available models and writes an always-applied rule that overrides the skill defaults. Use for /setup-pstack, "configure pstack models", or changing pstack's model choices.
+description: Configure which models pstack uses per role. Detects your available models and writes the per-role config that overrides the skill defaults. Use for /setup-pstack, "configure pstack models", or changing pstack's model choices.
 ---
 
 # Setup pstack
 
-Write `~/.cursor/rules/pstack-models.mdc`, an always-applied rule that sets pstack's model per role.
+Write pstack's per-role model configuration. The canonical location is `~/.pstack/models.md`, which every host can read. On Cursor, write the same body to `~/.cursor/rules/pstack-models.mdc` as well, with `alwaysApply: true`, so Cursor keeps applying it automatically.
 
 ## Steps
 
@@ -15,7 +15,7 @@ Enumerate the model slugs you can pass to a `Task` subagent in this session. Tha
 
 ### 2. Load current state
 
-The default role-to-model mapping is the rule shape shown in step 5 below. If `~/.cursor/rules/pstack-models.mdc` already exists, read it and treat its values as the current choices. Otherwise start from those defaults.
+The default role-to-model mapping is the shape shown in step 5 below. If `~/.pstack/models.md` already exists, read it and treat its values as the current choices. Otherwise check `~/.cursor/rules/pstack-models.mdc`, left by an earlier Cursor setup, and carry those values forward. Otherwise start from the defaults.
 
 ### 3. Map and confirm
 
@@ -27,7 +27,7 @@ Every real slug written must be in the detected set. `inherit-parent` and `auto`
 
 ### 5. Write the rule
 
-Write `~/.cursor/rules/pstack-models.mdc` with `alwaysApply: true` and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Shape:
+Write `~/.pstack/models.md` with one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. The frontmatter below is what Cursor needs for `alwaysApply`; on Cursor write the same body to `~/.cursor/rules/pstack-models.mdc` too. Other hosts read the canonical file directly, and the frontmatter is harmless there. Shape:
 
 ```
 ---

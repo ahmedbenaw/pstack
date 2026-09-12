@@ -33,7 +33,7 @@ Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-ser
 | 6 | `~/.cursor/skills/`, `~/.cursor/plugins/` install paths | 4 | `~/.claude/skills/`, `~/.claude/plugins/`; Codex `~/.codex/plugins/` | ✅ | ✅ | n/a | ✅ | **port** |
 | 7 | `.cursor/skills/verify-<app>/` output dir | 4 | `.claude/skills/verify-<app>/` | ✅ | ✅ | n/a | ✅ | **port** |
 | 8 | `.cursor/settings.json` | 3 | `.claude/settings.json` | ✅ | ✅ | n/a | ✅ | **port** |
-| 9 | `~/.cursor/rules/pstack-models.mdc` (`setup-pstack`) | 5 | Per-host config target. **Real logic, not prose** — must detect host and write the right file. Needs its own test. | ✅ | ✅ | ❌ | ✅ | **port** |
+| 9 | `~/.cursor/rules/pstack-models.mdc` (`setup-pstack`, and the `interrogate`/`swarm`/`arena` readers) | 5 | Canonical `~/.pstack/models.md`, readable on every host; the Cursor `.mdc` is still written on Cursor for `alwaysApply`, and readers fall back to it so an existing Cursor setup keeps working. (Prose instructions, not executable code — an earlier draft of this row called it "real logic"; it is not.) | ✅ | ✅ | ❌ | ✅ | **port** |
 | 10 | `/loop` (Cursor built-in) | 11 | Claude Code ships a native `/loop`. Codex/GPT equivalence **unverified** | ✅ | ? | ❌ | ? | **partial** |
 | 11 | Cursor cloud agents / parallel subagent fan-out (`swarm`, `arena`, `architect`, `interrogate`, autopilot playbooks) | 3+ | Claude Code `Agent` tool. No subagent spawn from the MCP connector | ✅ | ~ | ❌ | ✅ | **partial** |
 | 12 | `automations/benny/` — Cursor-hosted automation runner (`.cursor/automations/benny/`, `.cursor/benny/routing.md`, `feature-map.md`) | 8 | No host-managed automation runner. Nearest: scheduled tasks / cron | ~ | ❌ | ❌ | ~ | **partial** |
