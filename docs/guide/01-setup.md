@@ -4,13 +4,22 @@ In this page you install the plugin, pick which models pstack uses, and run your
 
 ## Install the plugin
 
-In a Cursor chat, run:
+Per host:
 
-```text
-/add-plugin pstack
-```
+- **Claude Code and Cowork.** Add the marketplace, then install:
 
-Cursor confirms the plugin is installed.
+  ```text
+  /plugin marketplace add https://github.com/ahmedbenaw/pstack.git
+  /plugin install pstack@pstack
+  ```
+
+- **Codex.** `codex plugin marketplace add https://github.com/ahmedbenaw/pstack.git`, then `codex plugin install pstack@pstack`.
+
+- **ChatGPT.** Add `https://pstack-mcp.pstack.workers.dev/mcp` as a Developer Mode connector; the skills arrive as MCP tools rather than slash commands.
+
+- **Cursor.** `/add-plugin pstack`.
+
+The host confirms the plugin is installed.
 
 ## Pick your models
 

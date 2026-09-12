@@ -21,6 +21,11 @@ Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-ser
 | **partial** | Native on some hosts, absent on others. Closable only by naming the limitation per host. |
 | **compromise** | No equivalent anywhere. Cannot be closed without dropping or redefining the feature. Needs a decision. |
 
+Host columns mean **the reference names something correct for that host**, not that the
+capability executes there. The ChatGPT connector exposes three read-only tools and runs
+nothing, so a ✅ in its column means an agent reading the instruction on that host is told
+the right thing, and ❌ means the instruction still names something it cannot reach at all.
+
 ## The map
 
 | # | Cursor reference | Files | Native equivalent | CC | CX | GPT | CW | Status |
@@ -37,7 +42,8 @@ Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-ser
 | 10 | `/loop` (Cursor built-in) | 11 | Claude Code ships a native `/loop`. Codex/GPT equivalence **unverified** | ✅ | ? | ❌ | ? | **partial** |
 | 11 | Cursor cloud agents / parallel subagent fan-out (`swarm`, `arena`, `architect`, `interrogate`, autopilot playbooks) | 3+ | Claude Code `Agent` tool. No subagent spawn from the MCP connector | ✅ | ~ | ❌ | ✅ | **partial** |
 | 12 | `automations/benny/` — Cursor-hosted automation runner (`.cursor/automations/benny/`, `.cursor/benny/routing.md`, `feature-map.md`) | 8 | No host-managed automation runner. Nearest: scheduled tasks / cron | ~ | ❌ | ❌ | ~ | **partial** |
-| 13 | **Bugbot** review triage (`references/bugbot-triage.md`, and `scripts/watch-pr/` types, render, github clients + tests) | 11 | Generalized to *automated review*, per Ben's decision. `references/review-triage.md` keeps the rubric, which judges the claim rather than the filer, and `watch-pr` renames `isBugbot`/`bugbotReviewPasses` to `isAutomatedReview`/`reviewPasses` and now detects Copilot, CodeRabbit, Sonar, Codacy and DeepSource alongside Bugbot. Caveat: `/code-review --comment` posts under the human's own login, so the watcher cannot label it; the doc says to apply the rubric by hand there | ✅ | ✅ | ~ | ✅ | **port** |
+| 13 | **Bugbot** review triage (`references/bugbot-triage.md`, and `scripts/watch-pr/` types, render, policy, github clients + tests) | 11 | Generalized to *automated review*, per Ben's decision. `references/review-triage.md` keeps the rubric, which judges the claim rather than the filer, and `watch-pr` renames `isBugbot`/`bugbotReviewPasses` to `isAutomatedReview`/`reviewPasses` and now detects Copilot, CodeRabbit, Sonar, Codacy and DeepSource alongside Bugbot. Caveat: `/code-review --comment` posts under the human's own login, so the watcher cannot label it; the doc says to apply the rubric by hand there | ✅ | ✅ | ~ | ✅ | **port** |
+| 14 | `create-skill` (Cursor built-in, used by `authoring-a-skill`, `automate-me`, `reflect`, and the guide) | 6 | None shipped here, and Claude Code has no equivalent built-in. `playbooks/authoring-a-skill.md` now states the frontmatter and body requirements inline and is the referenced authority; Cursor's built-in is named as the one-pass shortcut where it exists | ✅ | ✅ | ✅ | ✅ | **port** |
 
 ## The rows that cannot be closed
 
@@ -55,17 +61,32 @@ otherwise would be false:
    watches a repo and dispatches agents. Claude Code has scheduled tasks, which is
    adjacent but not the same execution model.
 
-## Consequence to accept before starting
+## What this cost, in hindsight
 
-Nativizing the reference lines **ends version parity with upstream**. Today this
-fork tracks upstream's version exactly (0.15.2) and upstream patches apply cleanly
-except at reference lines. After this work the fork diverges deliberately, and every
-future upstream sync becomes a merge at precisely these 47 files. That is the price
-of nativization and it should be a conscious trade, not a surprise.
+Nativization ended version parity with upstream. The fork tracked upstream's
+number exactly through 0.15.2 and now runs its own line from 1.0.0, so every
+future upstream sync is a merge at these files rather than a clean apply. That
+was a deliberate trade, taken with the version decision.
 
-`CONTRIBUTING.md` currently states that ported content's "whole value is staying
-faithful to the Cursor original." That sentence and this work cannot both stand as
-written. The resolution that keeps upstream syncing viable: **nativize tool and
-surface references (the *how*); keep workflow prose verbatim (the *what*)** — which
-is what `README.md`'s provenance section already claims ("tool-name references
-fixed"). `CONTRIBUTING.md` needs updating to say so explicitly.
+The rule that keeps syncing tractable: **nativize tool and surface references
+(the *how*); keep workflow prose verbatim (the *what*).** `CONTRIBUTING.md`
+states it under "What we do change in ported content", and it predicts exactly
+which hunks will reject on the next sync.
+
+## What the review board caught
+
+A five-lens adversarial review ran over the finished diff and found work that
+the residual greps had not. Recorded here because the pattern repeats:
+
+- **A sweep that excludes by line content is not a sweep.** An early residual
+  check filtered out every line *mentioning* `scripts/` rather than files under
+  that directory, and missed live Cursor references in `orchestrate.md` and the
+  guide.
+- **Markdown greps do not find coupling in code.** `scripts/orch/store.ts` still
+  shelled out to Graphite long after the prose said `gh`, because the prose was
+  what had been searched.
+- **Porting a resolver is not the same as reimplementing it.** The first `gh`
+  frontier walk only descended from the checked-out branch, silently dropping
+  every PR above it, and treated trunk and fork PRs as stack members.
+- **Renaming a concept in one file leaves the other one behind.** `github.ts`
+  learned six new review bots while `policy.ts` still knew only Bugbot.
