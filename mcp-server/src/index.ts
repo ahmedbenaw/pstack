@@ -24,6 +24,12 @@ export class PstackMCP extends McpAgent<Env, State, Props> {
       {
         description:
           "List every pstack skill and subagent with its one-line description. Call this first to see what's available, then call get_pstack_skill or get_pstack_agent for the full instructions of whichever one matches your task.",
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
         inputSchema: {},
       },
       async () => {
@@ -51,6 +57,12 @@ export class PstackMCP extends McpAgent<Env, State, Props> {
       {
         description:
           "Fetch the full instructions for one named pstack skill (its SKILL.md plus any reference/playbook files). Follow the returned instructions yourself - this tool returns text, it does not execute anything. Start with 'poteto-mode' if you're unsure which skill fits a task; its own instructions route to the other 46.",
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
         inputSchema: {
           name: z
             .string()
@@ -86,6 +98,12 @@ export class PstackMCP extends McpAgent<Env, State, Props> {
       {
         description:
           "Fetch the full definition of one named pstack subagent (poteto-agent or comment-sicko). These describe a persona/behavior mode to adopt, not a tool this server executes - read the returned text and act in that style yourself.",
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
         inputSchema: {
           name: z.string().describe("Agent name: 'poteto-agent' or 'comment-sicko'."),
         },
