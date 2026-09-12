@@ -57,7 +57,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 - [ ] Confirm `gh auth status` once. GitHub CLI (`gh`) is the forge for every PR operation.
 - [ ] Open the PR ready, never draft, with `gh pr create --base <base-branch>`. A stack child targets its parent branch.
 - [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
-- [ ] Run `/unslop` before each commit and `/no-comments` before review.
+- [ ] Strip code slop before each commit and `/no-comments` before review.
 - [ ] Triage every Bugbot and security-reviewer comment per `../references/bugbot-triage.md`.
 - [ ] Rebase onto current trunk before babysit and again before the merge-ready report.
 

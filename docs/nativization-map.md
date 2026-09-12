@@ -26,7 +26,7 @@ Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-ser
 | # | Cursor reference | Files | Native equivalent | CC | CX | GPT | CW | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `~/.cursor/projects/<slug>/agent-transcripts/<uuid>/<uuid>.jsonl` (`recall`, `reflect`) | 7 | `~/.claude/projects/<slug>/<uuid>.jsonl` — **verified present on this machine**; flat, no `agent-transcripts/<uuid>/` nesting | ✅ | ? | ❌ | ✅ | **port** |
-| 2 | `cursor-team-kit` `/deslop` | 8 | `skills/unslop/` — already in this repo | ✅ | ✅ | ✅ | ✅ | **port** |
+| 2 | `cursor-team-kit` `/deslop` (**code** slop) | 8 | **Not `unslop`** — `unslop` is prose-only by its own frontmatter, and `docs/guide/05-build-and-clean.md` states the split explicitly. The outcome is now written inline (narrating comments, unsupported guards, dead compatibility paths, unrelated edits), with `principle-subtract-before-you-add` as the rule and Claude Code's `/simplify` as a one-pass accelerator | ✅ | ~ | ~ | ✅ | **port** |
 | 3 | `cursor-team-kit` `control-cli` / `control-ui` | 5 | `skills/create-verification-skill/` + `maintain-verification-skill/` — already in this repo | ✅ | ✅ | ✅ | ✅ | **port** |
 | 4 | Graphite (`gt`) | 7 | Already documented as never-required; prune to `gh` | ✅ | ✅ | ✅ | ✅ | **port** |
 | 5 | Origin CLI (`origin pr …`) | 6 | `gh` is already the documented default; Origin is the optional branch | ✅ | ✅ | ✅ | ✅ | **port** |
