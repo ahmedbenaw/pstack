@@ -62,6 +62,35 @@ export interface ReviewComment {
   readonly line: number | null;
   readonly createdAt: string;
 }
+// The one place that knows which reviewers are automated. `logins` matches a PR
+// comment's author; `checkTokens` matches a pending check's name. Both detection
+// paths read from here so adding a reviewer is a single edit and the two cannot
+// drift, which they did: github.ts learned six new bots while policy.ts still
+// only knew Bugbot, so a CodeRabbit repo labelled threads automated while its
+// own in-flight check never counted as review automation running.
+export const REVIEW_BOTS = {
+  logins: [
+    "bugbot",
+    "coderabbitai",
+    "copilot-pull-request-reviewer",
+    "sonarcloud",
+    "sonarqubecloud",
+    "codacy-production",
+    "deepsource-autofix",
+  ],
+  checkTokens: [
+    "bugbot",
+    "coderabbit",
+    "copilot",
+    "sonar",
+    "codacy",
+    "deepsource",
+    "security review",
+    "pr review automation",
+    "review automation",
+  ],
+} as const;
+
 export interface ReviewThread {
   readonly id: string;
   readonly firstComment: ReviewComment | null;

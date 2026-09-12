@@ -1,6 +1,6 @@
 import { WatcherQueryError, resolveChecks } from "./github.ts";
 import type * as T from "./types.ts";
-import { nonEmpty } from "./types.ts";
+import { nonEmpty, REVIEW_BOTS } from "./types.ts";
 export function assessGitHubMerge(args: {
   readonly mergeStateStatus: T.MergeStateStatus;
   readonly headRollupState: T.RollupState;
@@ -46,12 +46,6 @@ async function mergeAssessment(
     }),
   };
 }
-const AUTOMATION_TOKENS = [
-  "bugbot",
-  "security review",
-  "pr review automation",
-  "review automation",
-] as const;
 export async function readSnapshot(args: {
   readonly reader: T.GitHubReader;
   readonly context: T.PrContext;
@@ -128,7 +122,7 @@ export async function readSnapshot(args: {
     reviewAutomationRunning: checks.checks.some(
       (check) =>
         check.kind === "pending" &&
-        AUTOMATION_TOKENS.some((token) =>
+        REVIEW_BOTS.checkTokens.some((token) =>
           check.name.toLowerCase().includes(token)
         )
     ),

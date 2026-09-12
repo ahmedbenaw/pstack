@@ -967,31 +967,6 @@ function countLine(value: Counts): string {
     : entries.map(([name, count]) => `${name}=${count}`).join(", ");
 }
 
-const OPEN_GT_PR_STATUSES = new Set([
-  "Trunk branch locked",
-  "Changes requested",
-  "Waiting on PRs in this stack to merge",
-  "Waiting on downstack merge state",
-  "Draft",
-  "Required checks failed",
-  "Undergoing failure detection",
-  "Merge queue failed on current head commit",
-  "Handed off to merge queue...",
-  "Waiting on downstack",
-  "Merge conflicts",
-  "Needs reviewers",
-  "Needs approvals",
-  "Needs restack",
-  "Queued to merge...",
-  "Ready to merge",
-  "Ready to merge as stack",
-  "Rebasing...",
-  "Waiting on CI...",
-  "Stale, needs rebase onto trunk",
-  "Unresolved comments",
-  "Waiting on required CI",
-  "Waiting to merge...",
-]);
 
 interface ForgePullRequest {
   readonly pr: number;
@@ -1000,6 +975,7 @@ interface ForgePullRequest {
 
 interface ForgeFrontierEntry extends ForgePullRequest {
   readonly branches: string;
+  readonly sha: string;
 }
 
 // The stack is discovered from GitHub, not from Graphite's local metadata. Walk
@@ -1011,6 +987,7 @@ interface GhPrRow {
   readonly number: number;
   readonly headRefName: string;
   readonly baseRefName: string;
+  readonly headRefOid: string;
   readonly state: FrontierPrState;
 }
 
@@ -1027,7 +1004,7 @@ function ghPrRows(repo: string): readonly GhPrRow[] {
         "--limit",
         "1000",
         "--json",
-        "number,headRefName,baseRefName,state",
+        "number,headRefName,baseRefName,headRefOid,state,isCrossRepository",
       ],
       {
         cwd: repo,
@@ -1050,27 +1027,37 @@ function ghPrRows(repo: string): readonly GhPrRow[] {
   if (!Array.isArray(parsed)) {
     throw new UserError("gh pr list did not return an array of pull requests");
   }
-  return parsed.map((row, index) => {
+  const rows: GhPrRow[] = [];
+  for (const [index, row] of parsed.entries()) {
     const record = row as Record<string, unknown>;
     const number = record["number"];
     const headRefName = record["headRefName"];
     const baseRefName = record["baseRefName"];
+    const headRefOid = record["headRefOid"];
     const state = frontierPrStateOrNull(record["state"]);
     if (
       typeof number !== "number" ||
-      !Number.isInteger(number) ||
+      !Number.isSafeInteger(number) ||
+      number < 1 ||
       typeof headRefName !== "string" ||
       headRefName.length === 0 ||
       typeof baseRefName !== "string" ||
       baseRefName.length === 0 ||
+      typeof headRefOid !== "string" ||
+      !/^[0-9a-f]{40,64}$/i.test(headRefOid) ||
       state === null
     ) {
       throw new UserError(
         `gh pr list returned an invalid pull request at index ${index}: ${JSON.stringify(row)}`
       );
     }
-    return { number, headRefName, baseRefName, state };
-  });
+    // A fork's PR carries only its bare branch name, so a drive-by PR opened from
+    // someone else's `main` would collide with a branch name in this repo and be
+    // walked into the stack. Only same-repo pull requests can be stack members.
+    if (record["isCrossRepository"] === true) continue;
+    rows.push({ number, headRefName, baseRefName, headRefOid, state });
+  }
+  return rows;
 }
 
 function currentBranch(repo: string): string {
@@ -1096,25 +1083,75 @@ function currentBranch(repo: string): string {
   return branch;
 }
 
+function repoTrunk(repo: string): string {
+  let raw: string;
+  try {
+    raw = execFileSync(
+      "gh",
+      ["repo", "view", "--json", "defaultBranchRef"],
+      {
+        cwd: repo,
+        encoding: "utf8",
+        env: { ...process.env, NO_COLOR: "1" },
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+  } catch (error) {
+    throw new UserError(`gh repo view failed: ${errorMessage(error)}`);
+  }
+  let name: unknown;
+  try {
+    name = (JSON.parse(raw) as Record<string, Record<string, unknown>>)[
+      "defaultBranchRef"
+    ]?.["name"];
+  } catch {
+    throw new UserError("gh repo view did not return JSON");
+  }
+  if (typeof name !== "string" || name.length === 0) {
+    throw new UserError("gh repo view did not report a default branch");
+  }
+  return name;
+}
+
+// OPEN beats MERGED beats CLOSED when one branch has carried several pull
+// requests, so a stale closed PR never displaces the real parent.
+function prRank(row: GhPrRow): number {
+  return row.state === "OPEN" ? 2 : row.state === "MERGED" ? 1 : 0;
+}
+
 function githubFrontier(repo: string): readonly ForgeFrontierEntry[] {
+  const trunk = repoTrunk(repo);
   const byHead = new Map<string, GhPrRow>();
   for (const row of ghPrRows(repo)) {
-    // Several PRs can share a head over a repo's life; the open one wins, and
-    // otherwise the highest number, so a reopened branch resolves to its latest PR.
+    // Trunk is never a stack member. A repo can legitimately have a pull request
+    // whose head is trunk (a main -> release promotion), and treating it as one
+    // either splices an unrelated PR under the stack or, when it also targets
+    // trunk, looks exactly like a cycle.
+    if (row.headRefName === trunk) continue;
     const seen = byHead.get(row.headRefName);
-    if (
-      seen === undefined ||
-      (seen.state !== "OPEN" &&
-        (row.state === "OPEN" || row.number > seen.number))
-    ) {
+    if (seen === undefined) {
+      byHead.set(row.headRefName, row);
+      continue;
+    }
+    const rank = prRank(row);
+    const seenRank = prRank(seen);
+    if (rank === seenRank && row.baseRefName !== seen.baseRefName) {
+      throw new UserError(
+        `branch ${row.headRefName} has two ${row.state.toLowerCase()} pull requests on different bases (#${seen.number} onto ${seen.baseRefName}, #${row.number} onto ${row.baseRefName}); resolve the stack by hand`
+      );
+    }
+    if (rank > seenRank || (rank === seenRank && row.number > seen.number)) {
       byHead.set(row.headRefName, row);
     }
   }
-  const chain: GhPrRow[] = [];
-  const visited = new Set<string>();
+
   const head = currentBranch(repo);
+  const visited = new Set<string>();
+
+  // Down from the checked-out branch to trunk: the stack below HEAD.
+  const below: GhPrRow[] = [];
   let branch = head;
-  while (byHead.has(branch)) {
+  while (branch !== trunk && byHead.has(branch)) {
     if (visited.has(branch)) {
       throw new UserError(
         `pull request base refs form a cycle at branch ${branch}`
@@ -1122,18 +1159,55 @@ function githubFrontier(repo: string): readonly ForgeFrontierEntry[] {
     }
     visited.add(branch);
     const row = byHead.get(branch) as GhPrRow;
-    chain.push(row);
+    below.push(row);
     branch = row.baseRefName;
   }
-  if (chain.length === 0) {
+  if (below.length === 0) {
     throw new UserError(
       `no pull request has ${head} as its head branch; this clone may be on trunk, or the PR may not be open yet`
     );
   }
-  chain.reverse();
-  const result = chain.map((row) => ({
+
+  // Up from the checked-out branch: the stack above HEAD. Without this the
+  // frontier silently stops at whatever happens to be checked out, which is not
+  // the whole stack the playbook reasons about.
+  const openChildrenOf = new Map<string, GhPrRow[]>();
+  for (const row of byHead.values()) {
+    if (row.state !== "OPEN") continue;
+    const siblings = openChildrenOf.get(row.baseRefName) ?? [];
+    siblings.push(row);
+    openChildrenOf.set(row.baseRefName, siblings);
+  }
+  const above: GhPrRow[] = [];
+  let top = head;
+  for (;;) {
+    const children = openChildrenOf.get(top) ?? [];
+    if (children.length === 0) break;
+    if (children.length > 1) {
+      const names = children
+        .map((child) => `#${child.number}`)
+        .sort()
+        .join(", ");
+      throw new UserError(
+        `branch ${top} has more than one open child pull request (${names}); the stack forks here, so resolve it by hand`
+      );
+    }
+    const child = children[0] as GhPrRow;
+    if (visited.has(child.headRefName)) {
+      throw new UserError(
+        `pull request base refs form a cycle at branch ${child.headRefName}`
+      );
+    }
+    visited.add(child.headRefName);
+    above.push(child);
+    top = child.headRefName;
+  }
+
+  below.reverse();
+  const result = [...below, ...above].map((row) => ({
     branches: row.headRefName,
     pr: row.number,
+    sha: row.headRefOid,
     state: row.state,
   }));
   if (new Set(result.map((row) => row.pr)).size !== result.length) {
@@ -1170,10 +1244,10 @@ function branchSha({
 }
 
 function resolveFrontier(repo: string): readonly FrontierPr[] {
-  return githubFrontier(repo).map((row) => ({
-    ...row,
-    sha: branchSha({ branch: row.branches, repo }),
-  }));
+  // The SHA comes from the forge with the PR, not from `git rev-parse <branch>`:
+  // a bare name resolves a same-named tag ahead of the branch, so the local lookup
+  // could pin an object that was never the PR head.
+  return githubFrontier(repo);
 }
 
 function validateFrontierPin({

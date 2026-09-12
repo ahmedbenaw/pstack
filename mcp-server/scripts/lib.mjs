@@ -18,7 +18,13 @@ export const SKIP_DIRS = new Set([
 
 export function readTextFilesRecursive(dir, relativeTo) {
   const out = {};
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+  // Sorted: readdir order is filesystem-defined, so without this the generated
+  // bundle's bytes differ between APFS and ext4 and a regenerate-and-diff check
+  // would false-fail in CI.
+  const entries = fs
+    .readdirSync(dir, { withFileTypes: true })
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  for (const entry of entries) {
     if (entry.isDirectory() && SKIP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {

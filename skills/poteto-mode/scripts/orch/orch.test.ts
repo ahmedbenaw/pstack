@@ -125,8 +125,11 @@ if [ "$(pwd -P)" != "${realpathSync(join(directory, "repo"))}" ]; then
   exit 2
 fi
 case "$*" in
-  "pr list --state all --limit 1000 --json number,headRefName,baseRefName,state")
+  "pr list --state all --limit 1000 --json number,headRefName,baseRefName,headRefOid,state,isCrossRepository")
     cat "${outputPath}"
+    ;;
+  "repo view --json defaultBranchRef")
+    printf '{"defaultBranchRef":{"name":"main"}}'
     ;;
   *)
     printf 'unexpected gh arguments: %s\\n' "$*" >&2
@@ -400,26 +403,41 @@ describe("Store", () => {
   it("resolves the ordered frontier from the forge and validates an optional pin", async () => {
     const { directory, store } = await initializedStore();
     const stack = await makeGitStack(directory);
-    // Deliberately unordered, and with a stale closed PR sharing a head, so the
-    // walk has to chain base refs rather than trust gh's listing order.
+    // Deliberately unordered, so the walk has to chain base refs rather than
+    // trust gh's listing order. Same-head precedence and cycles are covered by
+    // their own cases below.
     const output = JSON.stringify([
       {
         number: 11,
         headRefName: "stack/open",
         baseRefName: "stack/closed",
+        headRefOid: stack.openSha,
         state: "OPEN",
       },
       {
         number: 10,
         headRefName: "stack/merged",
         baseRefName: "main",
+        headRefOid: stack.mergedSha,
         state: "MERGED",
       },
       {
         number: 13,
         headRefName: "stack/closed",
         baseRefName: "stack/merged",
+        headRefOid: stack.closedSha,
         state: "CLOSED",
+      },
+      // A drive-by pull request from a fork, whose head is that fork's own `main`.
+      // Keyed on head name alone it would collide with this repo's trunk and be
+      // walked into the stack; isCrossRepository must keep it out entirely.
+      {
+        number: 99,
+        headRefName: "main",
+        baseRefName: "main",
+        headRefOid: "f".repeat(40),
+        state: "OPEN",
+        isCrossRepository: true,
       },
     ]);
 
@@ -531,6 +549,138 @@ describe("Store", () => {
         await expect(
           store.frontier.set({ repo: stack.repo })
         ).rejects.toThrow("no pull request has stack/open as its head branch");
+      },
+    });
+  });
+
+  // The fixtures above only ever have one PR per head and never reach trunk as a
+  // head, so the precedence, trunk-boundary, cycle and up-walk branches all went
+  // untested until the review board pointed it out.
+
+  const row = (
+    number: number,
+    head: string,
+    base: string,
+    state: string,
+    oid = String(number).padStart(40, "0")
+  ) => ({
+    number,
+    headRefName: head,
+    baseRefName: base,
+    headRefOid: oid,
+    state,
+  });
+
+  it("keeps trunk out of the stack even when a pull request has trunk as its head", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeGh({
+      directory,
+      // A main -> release promotion PR. Walked as a stack member it would either
+      // splice itself under the stack or look like a cycle.
+      output: JSON.stringify([
+        row(11, "stack/open", "stack/merged", "OPEN", stack.openSha),
+        row(10, "stack/merged", "main", "MERGED", stack.mergedSha),
+        row(50, "main", "release", "OPEN"),
+      ]),
+      operation: async () => {
+        const frontier = await store.frontier.set({ repo: stack.repo });
+        expect(frontier.prs.map((pr) => pr.pr)).toEqual([10, 11]);
+      },
+    });
+  });
+
+  it("includes the pull requests above the checked-out branch", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+    git({ repo: stack.repo, args: ["checkout", "stack/merged"] });
+
+    await withFakeGh({
+      directory,
+      output: JSON.stringify([
+        row(10, "stack/merged", "main", "OPEN", stack.mergedSha),
+        row(13, "stack/closed", "stack/merged", "OPEN", stack.closedSha),
+        row(11, "stack/open", "stack/closed", "OPEN", stack.openSha),
+      ]),
+      operation: async () => {
+        const frontier = await store.frontier.set({ repo: stack.repo });
+        expect(frontier.prs.map((pr) => pr.pr)).toEqual([10, 13, 11]);
+      },
+    });
+  });
+
+  it("prefers the merged parent over a higher-numbered closed pull request", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeGh({
+      directory,
+      output: JSON.stringify([
+        row(11, "stack/open", "stack/merged", "OPEN", stack.openSha),
+        row(10, "stack/merged", "main", "MERGED", stack.mergedSha),
+        row(14, "stack/merged", "main", "CLOSED", stack.mergedSha),
+      ]),
+      operation: async () => {
+        const frontier = await store.frontier.set({ repo: stack.repo });
+        expect(frontier.prs.map((pr) => pr.pr)).toEqual([10, 11]);
+      },
+    });
+  });
+
+  it("refuses to guess when one branch has two open pull requests on different bases", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeGh({
+      directory,
+      output: JSON.stringify([
+        row(11, "stack/open", "stack/merged", "OPEN", stack.openSha),
+        row(12, "stack/open", "main", "OPEN", stack.openSha),
+        row(10, "stack/merged", "main", "MERGED", stack.mergedSha),
+      ]),
+      operation: async () => {
+        await expect(
+          store.frontier.set({ repo: stack.repo })
+        ).rejects.toThrow("two open pull requests on different bases");
+      },
+    });
+  });
+
+  it("refuses to guess when the stack forks above the checked-out branch", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+    git({ repo: stack.repo, args: ["checkout", "stack/merged"] });
+
+    await withFakeGh({
+      directory,
+      output: JSON.stringify([
+        row(10, "stack/merged", "main", "OPEN", stack.mergedSha),
+        row(13, "stack/closed", "stack/merged", "OPEN", stack.closedSha),
+        row(11, "stack/open", "stack/merged", "OPEN", stack.openSha),
+      ]),
+      operation: async () => {
+        await expect(
+          store.frontier.set({ repo: stack.repo })
+        ).rejects.toThrow("more than one open child pull request");
+      },
+    });
+  });
+
+  it("raises on a base-ref cycle instead of looping", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeGh({
+      directory,
+      output: JSON.stringify([
+        row(11, "stack/open", "stack/closed", "MERGED", stack.openSha),
+        row(13, "stack/closed", "stack/open", "MERGED", stack.closedSha),
+      ]),
+      operation: async () => {
+        await expect(
+          store.frontier.set({ repo: stack.repo })
+        ).rejects.toThrow("form a cycle at branch");
       },
     });
   });

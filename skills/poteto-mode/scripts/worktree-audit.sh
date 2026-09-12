@@ -12,7 +12,9 @@ repo="${1:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 cd "$repo" || exit 1
 
 # Main worktree is the first entry; everything else is a candidate.
-main_wt=$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')
+# sed, not awk: awk's $2 stops at the first space, and a worktree path with a
+# space in it would truncate to a prefix that matches every other entry.
+main_wt=$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -1)
 
 # origin/main drives the merge check. Best-effort; stale is fine for a first pass.
 git fetch origin main --quiet 2>/dev/null || echo "warn: could not fetch origin/main; merged column may be stale" >&2
@@ -22,20 +24,25 @@ prs=$(mktemp)
 gh pr list --author "@me" --state all --limit 1000 \
 	--json number,state,headRefName 2>/dev/null > "$prs" || echo "[]" > "$prs"
 
-# Transcripts dir, by host. Claude Code and Cowork slugify every non-alphanumeric
-# character and store the chats flat; Cursor drops the leading slash and nests them
-# under agent-transcripts/. Only the root differs, since the search below recurses.
-cc_slug=$(printf '%s' "$main_wt" | sed 's#[^a-zA-Z0-9]#-#g')
-cursor_slug=$(printf '%s' "$main_wt" | sed 's#^/##; s#/#-#g')
-transcripts="$HOME/.claude/projects/$cc_slug"
-if [ ! -d "$transcripts" ] && [ -d "$HOME/.cursor/projects/$cursor_slug/agent-transcripts" ]; then
-	transcripts="$HOME/.cursor/projects/$cursor_slug/agent-transcripts"
+# Transcripts root. Deliberately not a per-repo slug: Claude Code keys each
+# directory by the session's working directory, so a session started inside a
+# worktree lives under its own slug rather than the repo root's, and slugging the
+# main worktree would structurally miss exactly the sessions this audit is about.
+# The search below matches absolute worktree paths, so a broader root costs
+# nothing in precision.
+transcripts="$HOME/.claude/projects"
+if [ ! -d "$transcripts" ]; then
+	transcripts="$HOME/.cursor/projects"
+fi
+
+if ! command -v rg >/dev/null 2>&1; then
+	echo "warn: ripgrep (rg) is not installed; the LAST_CHAT column will be blank" >&2
 fi
 now=$(date +%s)
 
 printf "SIZE\tAGE\tMERGED\tDIRTY\tREMOTE\tPR\tLAST_CHAT\tBUCKET\tWORKTREE\n"
 
-git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt; do
+git worktree list --porcelain | sed -n 's/^worktree //p' | while IFS= read -r wt; do
 	[ "$wt" = "$main_wt" ] && continue
 
 	size=$(du -sh "$wt" 2>/dev/null | awk '{print $1}')
@@ -70,7 +77,7 @@ git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt;
 	# followed by "/" or a quote so glint-482 does not match glint-482-r37.
 	last="-"; last_ts=0
 	if [ -d "$transcripts" ]; then
-		f=$(rg -l -e "${wt}/" -e "${wt}\"" "$transcripts" 2>/dev/null \
+		f=$(rg -F -l -e "${wt}/" -e "${wt}\"" "$transcripts" 2>/dev/null \
 			| xargs stat -f '%m %N' 2>/dev/null | sort -rn | head -1)
 		if [ -n "$f" ]; then last_ts=$(echo "$f" | awk '{print $1}')
 			last=$(date -r "$last_ts" '+%Y-%m-%d' 2>/dev/null); fi

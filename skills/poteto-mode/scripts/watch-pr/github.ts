@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import type * as T from "./types.ts";
-import { nonEmpty, parsePrNumber } from "./types.ts";
+import { nonEmpty, parsePrNumber, REVIEW_BOTS } from "./types.ts";
 export const REVIEW_THREADS_QUERY =
   "\nquery ReviewThreads($owner: String!, $repo: String!, $pr: Int!) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      reviewThreads(first: 100) {\n        nodes {\n          id\n          isResolved\n          comments(first: 10) {\n            nodes {\n              body\n              createdAt\n              path\n              line\n              author { login }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
 export const PR_COMMIT_STATUS_QUERY =
@@ -330,25 +330,21 @@ function parseComment(value: unknown): T.ReviewComment {
     createdAt: string(object.createdAt, "review comment.createdAt"),
   };
 }
-// Logins that identify an automated code reviewer. Bugbot is Cursor's; the rest are
-// the reviewers a repo is likely to meet on GitHub. A review posted by `/code-review`
-// arrives under the human's own login and is deliberately not matched here: triage it
-// the same way, but the watcher cannot tell it apart from a person's comment.
-const REVIEW_BOT_LOGINS = [
-  "bugbot",
-  "copilot",
-  "coderabbit",
-  "sonarcloud",
-  "sonarqubecloud",
-  "codacy",
-  "deepsource",
-] as const;
+// A review posted by `/code-review` arrives under the human's own login and is
+// deliberately not matched here: triage it the same way, but the watcher cannot
+// tell it apart from a person's comment. The login is compared exactly, after
+// dropping GitHub's "[bot]" suffix — a substring test let any account whose name
+// merely contained a bot's name (notbugbot, coderabbit-impersonator) have its
+// comments counted as automated review, which also inflated the shared pass
+// count that babysit.md uses to start dismissing findings.
 function isAutomatedReview(comment: T.ReviewComment | null): boolean {
   if (comment === null) return false;
-  const author = (comment.authorLogin ?? "").toLowerCase();
+  const author = (comment.authorLogin ?? "")
+    .toLowerCase()
+    .replace(/\[bot\]$/, "");
   const body = comment.body.toLowerCase();
   return (
-    REVIEW_BOT_LOGINS.some((bot) => author.includes(bot)) ||
+    (REVIEW_BOTS.logins as readonly string[]).includes(author) ||
     (author === "cursor" &&
       [
         "bugbot",

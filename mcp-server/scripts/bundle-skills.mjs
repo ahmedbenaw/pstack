@@ -28,7 +28,7 @@ for (const name of fs.readdirSync(skillsRoot).sort()) {
 }
 
 const agents = {};
-for (const entry of fs.readdirSync(agentsRoot)) {
+for (const entry of fs.readdirSync(agentsRoot).sort()) {
   if (!entry.endsWith(".md")) continue;
   const name = entry.replace(/\.md$/, "");
   const text = fs.readFileSync(path.join(agentsRoot, entry), "utf8");
