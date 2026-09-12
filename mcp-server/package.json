@@ -1,6 +1,6 @@
 {
   "name": "pstack-mcp-server",
-  "version": "0.15.2",
+  "version": "1.0.0",
   "private": true,
   "description": "pstack's engineering-workflow skills, exposed as MCP tools for ChatGPT (Apps SDK) and other MCP clients.",
   "scripts": {

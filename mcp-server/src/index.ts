@@ -15,7 +15,7 @@ type State = Record<string, never>;
 type Props = Record<string, never>;
 
 export class PstackMCP extends McpAgent<Env, State, Props> {
-  server = new McpServer({ name: "pstack", version: "0.15.2" });
+  server = new McpServer({ name: "pstack", version: "1.0.0" });
   initialState: State = {};
 
   async init() {
@@ -56,7 +56,7 @@ export class PstackMCP extends McpAgent<Env, State, Props> {
       "get_pstack_skill",
       {
         description:
-          "Fetch the full instructions for one named pstack skill (its SKILL.md plus any reference/playbook files). Follow the returned instructions yourself - this tool returns text, it does not execute anything. Start with 'poteto-mode' if you're unsure which skill fits a task; its own instructions route to the other 46.",
+          "Fetch the full instructions for one named pstack skill (its SKILL.md plus any reference/playbook files). Follow the returned instructions yourself - this tool returns text, it does not execute anything. Start with 'poteto-mode' if you're unsure which skill fits a task; its own instructions route to the other 46. Some skills (swarm, arena, architect, interrogate, and the autopilot playbooks) are written around fanning work out to parallel subagents. This connector cannot spawn agents, so carry out those steps yourself in sequence and say that you did.",
         annotations: {
           readOnlyHint: true,
           destructiveHint: false,

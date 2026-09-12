@@ -11,10 +11,22 @@ Cowork skill, a Codex plugin, and a ChatGPT connector (`mcp-server/`).
 **Out of scope, deliberately** (see `.prettierignore` / `eslint.config.js`):
 
 - `skills/`, `agents/`, `docs/`, `automations/`, `assets/` - upstream-ported
-  content. Its whole value is staying faithful to the Cursor original;
-  reformatting it would work against that. See `README.md`'s provenance
-  section for exactly what was adapted (frontmatter trimmed to
-  name/description, tool-name references fixed) and what was kept verbatim.
+  content. Reformatting it would work against staying close to the Cursor
+  original, which is what makes upstream syncs tractable. See `README.md`'s
+  provenance section for exactly what was adapted and what was kept verbatim.
+
+### What we do change in ported content
+
+The dividing line is the *how*, not the *what*. Workflow prose - the methodology,
+the playbooks, the principles - stays upstream's. Tool and surface references get
+nativized, so an instruction names something the running host actually has: forge
+commands, file paths, config locations, wake mechanisms, agent runtimes, and the
+names of sibling skills. `docs/nativization-map.md` is the audit of every such
+change and which hosts it applies to.
+
+This is the reason an upstream patch usually applies cleanly except at reference
+lines. When `git apply` rejects a hunk on a sync, that is where to look: take
+upstream's prose and keep this port's references.
 
 ## Commands
 
