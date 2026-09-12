@@ -1112,7 +1112,8 @@ function githubFrontier(repo: string): readonly ForgeFrontierEntry[] {
   }
   const chain: GhPrRow[] = [];
   const visited = new Set<string>();
-  let branch = currentBranch(repo);
+  const head = currentBranch(repo);
+  let branch = head;
   while (byHead.has(branch)) {
     if (visited.has(branch)) {
       throw new UserError(
@@ -1126,7 +1127,7 @@ function githubFrontier(repo: string): readonly ForgeFrontierEntry[] {
   }
   if (chain.length === 0) {
     throw new UserError(
-      `no pull request has ${currentBranch(repo)} as its head branch; this clone may be on trunk, or the PR may not be open yet`
+      `no pull request has ${head} as its head branch; this clone may be on trunk, or the PR may not be open yet`
     );
   }
   chain.reverse();
