@@ -256,6 +256,62 @@ it("annotates automated-review threads with distinct review-pass counts", () => 
   expect(threads.map((thread) => thread.reviewPasses)).toEqual([3, 3]);
 });
 
+it("terminates on a base-ref cycle instead of hanging", () => {
+  // A based on B, B based on A. Before the guard this looped forever and took
+  // the watcher with it, while orch's equivalent walk raised cleanly.
+  const pr = (number: number, headRefName: string, baseRefName: string) => ({
+    number,
+    headRefName,
+    baseRefName,
+  });
+  const ordered = orderStack(
+    { owner: "o", repo: "r", number: 1 } as never,
+    [pr(1, "a", "b"), pr(2, "b", "a")] as never
+  );
+  expect(ordered.length).toBeLessThanOrEqual(2);
+});
+
+it("counts passes for a reviewer that stamps no run marker", () => {
+  // Bugbot and Cursor stamp RUN_ID / CURSOR_AUTOMATION_ID. Nothing else does, so
+  // before the batch fallback every CodeRabbit thread was keyless and reviewPasses
+  // sat at 1 no matter how many times the bot had reviewed.
+  const at = (id: string, createdAt: string) => ({
+    id,
+    isResolved: false,
+    comments: {
+      nodes: [
+        {
+          body: "possible null deref",
+          createdAt,
+          path: "a.ts",
+          line: 1,
+          author: { login: "coderabbitai[bot]" },
+        },
+      ],
+    },
+  });
+  const response = {
+    data: {
+      repository: {
+        pullRequest: {
+          reviewThreads: {
+            nodes: [
+              // Two findings from one pass, then a second pass an hour later.
+              at("a", "2026-09-13T10:00:04Z"),
+              at("b", "2026-09-13T10:00:51Z"),
+              at("c", "2026-09-13T11:30:00Z"),
+            ],
+          },
+        },
+      },
+    },
+  };
+  const threads = parseReviewThreads(response);
+  expect(threads.map((t) => t.isAutomatedReview)).toEqual([true, true, true]);
+  // Two passes, not three findings and not one.
+  expect(threads.map((t) => t.reviewPasses)).toEqual([2, 2, 2]);
+});
+
 it("recognises review bots other than Bugbot, and leaves human threads alone", () => {
   const thread = (id: string, login: string, body: string) => ({
     id,
@@ -270,9 +326,9 @@ it("recognises review bots other than Bugbot, and leaves human threads alone", (
         pullRequest: {
           reviewThreads: {
             nodes: [
-              thread("rabbit", "coderabbitai[bot]", "RUN_ID: run-1 potential null deref"),
+              thread("rabbit", "coderabbitai[bot]", "potential null deref"),
               thread("copilot", "copilot-pull-request-reviewer", "unchecked index"),
-              thread("human", "ben", "RUN_ID: run-2 I think this is wrong"),
+              thread("human", "ben", "I think this is wrong"),
             ],
           },
         },

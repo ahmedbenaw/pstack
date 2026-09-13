@@ -78,9 +78,15 @@ git worktree list --porcelain | sed -n 's/^worktree //p' | while IFS= read -r wt
 	last="-"; last_ts=0
 	if [ -d "$transcripts" ]; then
 		f=$(rg -F -l -e "${wt}/" -e "${wt}\"" "$transcripts" 2>/dev/null \
-			| xargs stat -f '%m %N' 2>/dev/null | sort -rn | head -1)
+			| xargs stat -f '%m %N' 2>/dev/null || true)
+		# stat -f is BSD; GNU coreutils wants -c. Try BSD first, fall back.
+		[ -n "$f" ] || f=$(rg -F -l -e "${wt}/" -e "${wt}\"" "$transcripts" 2>/dev/null \
+			| xargs stat -c '%Y %n' 2>/dev/null || true)
+		f=$(printf '%s\n' "$f" | sort -rn | head -1)
 		if [ -n "$f" ]; then last_ts=$(echo "$f" | awk '{print $1}')
-			last=$(date -r "$last_ts" '+%Y-%m-%d' 2>/dev/null); fi
+			# date -r is BSD; GNU wants -d @<epoch>.
+			last=$(date -r "$last_ts" '+%Y-%m-%d' 2>/dev/null \
+				|| date -d "@$last_ts" '+%Y-%m-%d' 2>/dev/null); fi
 	fi
 	recent=$([ "$last_ts" -gt 0 ] 2>/dev/null && [ $(( (now - last_ts) / 86400 )) -le 4 ] && echo yes || echo no)
 

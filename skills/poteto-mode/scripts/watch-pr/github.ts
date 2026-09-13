@@ -355,6 +355,12 @@ function isAutomatedReview(comment: T.ReviewComment | null): boolean {
       ].some((token) => body.includes(token)))
   );
 }
+// Identifies which review pass a thread belongs to, so the count reflects passes
+// rather than findings. Bugbot and Cursor stamp an explicit run marker. No other
+// reviewer does, and keying only on those markers pinned reviewPasses at 1 forever
+// on a Copilot or CodeRabbit repo — which defeats babysit.md's "from the third pass
+// on, lean toward dismissing". The fallback groups a reviewer's comments by the
+// minute they were posted, since one pass lands as a single batch.
 function passKey(comment: T.ReviewComment | null): string | null {
   if (comment === null) return null;
   for (const pattern of [
@@ -364,7 +370,9 @@ function passKey(comment: T.ReviewComment | null): string | null {
     const match = pattern.exec(comment.body);
     if (match?.[1]) return match[1];
   }
-  return null;
+  const batch = comment.createdAt.slice(0, 16); // YYYY-MM-DDTHH:MM
+  if (batch.length < 16) return null;
+  return `${(comment.authorLogin ?? "").toLowerCase()}@${batch}`;
 }
 export function parseReviewThreads(value: unknown): readonly T.ReviewThread[] {
   const nodes = list(
@@ -670,10 +678,18 @@ export function orderStack(
   const start = byNumber.get(context.number);
   if (start === undefined) return [context];
   const down: T.OpenPullRequest[] = [];
+  const walked = new Set<T.PrNumber>([start.number]);
   let current = start;
   while (byHead.has(current.baseRefName)) {
     const parent = byHead.get(current.baseRefName);
     if (parent === undefined) break;
+    // Base refs can form a cycle (A based on B, B based on A). Without this the
+    // loop never terminates and the watcher hangs mid-poll. The up-walk below
+    // already guards this way. orch's equivalent walk raises instead; here the
+    // function has no error channel and every other dead end degrades to a
+    // partial stack, so it stops at the repeat rather than throwing.
+    if (walked.has(parent.number)) break;
+    walked.add(parent.number);
     down.push(parent);
     current = parent;
   }
