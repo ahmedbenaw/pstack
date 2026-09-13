@@ -1,3 +1,6 @@
 node_modules/
 .DS_Store
 *.log
+
+# refactor-chain run state (local tooling, not part of the plugin)
+.refactor-chain/
