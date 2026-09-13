@@ -13,6 +13,34 @@ carry at least one Cursor-coupled reference.
 
 Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-server/`) · **CW** Cowork.
 
+## Status
+
+**Shipped as [v1.0.0](https://github.com/ahmedbenaw/pstack/releases/tag/v1.0.0).** Every
+row below marked **port** is done and live, not planned. The fork tracked upstream's
+version exactly through 0.15.2; 1.0.0 is the first release on its own line, because the
+content here deliberately diverges.
+
+Verified independently on each host rather than inferred from one:
+
+| Host | State | How it was checked |
+| --- | --- | --- |
+| Claude Code | 1.0.0 | Plugin cache force-re-extracted — the cache is version-keyed, so `plugin update` reported "already latest" while still serving pre-nativization content |
+| Codex | 1.0.0 | `codex plugin marketplace upgrade pstack`; clone at the release commit |
+| ChatGPT | 1.0.0 | Live on the wire at `https://pstack-mcp.pstack.workers.dev/mcp` — `serverInfo.version`, plus content assertions that the Origin/Graphite and Cursor-path references are gone |
+| Cowork | 1.0.0 | claude.ai marketplace synced to the release commit; 47 skills, 2 agents |
+
+Two host-sync behaviours worth knowing before trusting a "done":
+
+- **claude.ai's "Sync automatically" did not fire on push**, three times running. After
+  any push, use the marketplace's ⋮ → *Check for updates* and judge by the commit hash
+  on the card, not the toggle.
+- **Claude Code's plugin cache is keyed by version**, so content changes that keep the
+  same version are not re-extracted. A content-only fix needs a version bump or a
+  forced reinstall.
+
+Upstream `cursor/plugins` has not touched `pstack/` since 0.15.2, so nothing is pending
+to merge as of this release.
+
 ## Legend
 
 | Status | Meaning |
