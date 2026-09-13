@@ -35,6 +35,35 @@ test("only strips a matching quote pair, not a stray leading quote", () => {
   assert.equal(frontmatterField(text, "description"), '"unbalanced');
 });
 
+// Regression test for a real bug caught on 2026-09-14 by validating every
+// skill's bundled description: make-bot-ui used a `>-` folded block scalar, and
+// the single-line match captured the indicator, so the MCP bundle shipped
+// `"description": ">-"` and no host could tell what the skill did.
+
+test("folds a `>-` block scalar into one line", () => {
+  const text =
+    "---\nname: make-bot-ui\ndescription: >-\n  Use when building a custom UI\n  that wakes a bot.\n---\n";
+  assert.equal(
+    frontmatterField(text, "description"),
+    "Use when building a custom UI that wakes a bot."
+  );
+});
+
+test("folds a bare `>` block scalar", () => {
+  const text = "---\ndescription: >\n  One line\n  and another.\n---\n";
+  assert.equal(frontmatterField(text, "description"), "One line and another.");
+});
+
+test("keeps line breaks for a `|` block scalar", () => {
+  const text = "---\ndescription: |\n  First line\n  Second line\n---\n";
+  assert.equal(frontmatterField(text, "description"), "First line\nSecond line");
+});
+
+test("block scalar stops at the closing frontmatter delimiter", () => {
+  const text = "---\ndescription: >-\n  Only this.\n---\n\n# Heading\n\nBody text.\n";
+  assert.equal(frontmatterField(text, "description"), "Only this.");
+});
+
 // Regression test for a real bug caught on 2026-09-13: readTextFilesRecursive
 // walked every directory under skills/, so running `bun install` in
 // skills/poteto-mode/scripts/ (needed to run the watch-pr test suite) swept 37MB

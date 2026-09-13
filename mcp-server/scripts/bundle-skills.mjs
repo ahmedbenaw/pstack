@@ -61,6 +61,20 @@ fs.writeFileSync(outFile, banner + body);
 const skillCount = Object.keys(skills).length;
 const agentCount = Object.keys(agents).length;
 const bytes = Buffer.byteLength(banner + body);
+
+// The description is the only thing a host shows before loading a skill, so an
+// unparseable one makes that skill unusable while everything still looks fine.
+// make-bot-ui shipped `">-"` this way - a YAML block scalar the frontmatter
+// parser did not understand. Fail here rather than let it reach a host again.
+const badDescriptions = [
+  ...Object.entries(skills).map(([name, s]) => [`skill ${name}`, s.description]),
+  ...Object.entries(agents).map(([name, a]) => [`agent ${name}`, a.description]),
+].filter(([, d]) => !d || d.trim().length < 10 || /^[|>][-+]?$/.test(d.trim()));
+if (badDescriptions.length > 0) {
+  console.error("unusable frontmatter description(s) — a host would show these verbatim:");
+  for (const [what, d] of badDescriptions) console.error(`  ${what}: ${JSON.stringify(d)}`);
+  process.exit(1);
+}
 // A dependency directory under skills/ once took this bundle from 631KB to 8.7MB.
 // SKIP_DIRS stops the known cases; this stops the unknown ones, loudly, before the
 // Worker ships them.
