@@ -15,7 +15,7 @@ type State = Record<string, never>;
 type Props = Record<string, never>;
 
 export class PstackMCP extends McpAgent<Env, State, Props> {
-  server = new McpServer({ name: "pstack", version: "1.0.0" });
+  server = new McpServer({ name: "pstack", version: "1.0.1" });
   initialState: State = {};
 
   async init() {
