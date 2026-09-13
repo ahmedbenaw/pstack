@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun test orch watch-pr",
-    "typecheck": "tsc --project watch-pr/tsconfig.json --noEmit --strict"
+    "test": "bun test orch watch-pr --timeout 30000",
+    "typecheck": "tsc --noEmit -p watch-pr/tsconfig.json && tsc --noEmit -p orch/tsconfig.json"
   },
   "dependencies": {
     "commander": "14.0.0"

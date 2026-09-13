@@ -1216,33 +1216,6 @@ function githubFrontier(repo: string): readonly ForgeFrontierEntry[] {
   return result;
 }
 
-function branchSha({
-  branch,
-  repo,
-}: {
-  branch: string;
-  repo: string;
-}): string {
-  let raw: string;
-  try {
-    raw = execFileSync("git", ["rev-parse", branch], {
-      cwd: repo,
-      encoding: "utf8",
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  } catch (error) {
-    throw new UserError(
-      `git rev-parse ${branch} failed: ${errorMessage(error)}`
-    );
-  }
-  const sha = raw.trim();
-  if (!/^[0-9a-f]{40,64}$/i.test(sha)) {
-    throw new UserError(`git rev-parse ${branch} returned an invalid SHA`);
-  }
-  return sha;
-}
-
 function resolveFrontier(repo: string): readonly FrontierPr[] {
   // The SHA comes from the forge with the PR, not from `git rev-parse <branch>`:
   // a bare name resolves a same-named tag ahead of the branch, so the local lookup

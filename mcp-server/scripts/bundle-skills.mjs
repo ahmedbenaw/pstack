@@ -61,4 +61,14 @@ fs.writeFileSync(outFile, banner + body);
 const skillCount = Object.keys(skills).length;
 const agentCount = Object.keys(agents).length;
 const bytes = Buffer.byteLength(banner + body);
+// A dependency directory under skills/ once took this bundle from 631KB to 8.7MB.
+// SKIP_DIRS stops the known cases; this stops the unknown ones, loudly, before the
+// Worker ships them.
+const MAX_BUNDLE_BYTES = 2_000_000;
+if (bytes > MAX_BUNDLE_BYTES) {
+  console.error(
+    `bundle is ${bytes} bytes, over the ${MAX_BUNDLE_BYTES} ceiling — something under skills/ or agents/ is being swept in that should not be`
+  );
+  process.exit(1);
+}
 console.log(`Bundled ${skillCount} skills, ${agentCount} agents -> ${outFile} (${bytes} bytes)`);

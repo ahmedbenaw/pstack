@@ -38,3 +38,31 @@ jobs:
       - name: Typecheck mcp-server
         run: npx tsc --noEmit
         working-directory: mcp-server
+
+      # The generated bundle is committed, so it can drift from its sources. This
+      # regenerates it and fails if the committed copy differs. The bundler also
+      # enforces a size ceiling: a dependency directory under skills/ once took it
+      # from 631KB to 8.7MB.
+      - name: Generated content bundle is in sync with its sources
+        run: |
+          node mcp-server/scripts/bundle-skills.mjs
+          git diff --exit-code mcp-server/src/content.generated.ts
+
+      # skills/ is excluded from lint and format because it is upstream-ported
+      # prose, but it also holds ~2,800 lines of TypeScript (the orch and watch-pr
+      # CLIs) that nothing else in this workflow covers.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install skills tooling
+        run: bun install --frozen-lockfile
+        working-directory: skills/poteto-mode/scripts
+
+      - name: Typecheck skills CLIs (orch, watch-pr)
+        run: bun run typecheck
+        working-directory: skills/poteto-mode/scripts
+
+      - name: Test skills CLIs (orch, watch-pr)
+        run: bun run test
+        working-directory: skills/poteto-mode/scripts
