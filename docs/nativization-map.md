@@ -15,19 +15,25 @@ Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-ser
 
 ## Status
 
-**Shipped as [v1.0.0](https://github.com/ahmedbenaw/pstack/releases/tag/v1.0.0).** Every
-row below marked **port** is done and live, not planned. The fork tracked upstream's
-version exactly through 0.15.2; 1.0.0 is the first release on its own line, because the
-content here deliberately diverges.
+**Shipped as [v1.0.1](https://github.com/ahmedbenaw/pstack/releases/tag/v1.0.1)**
+(`b0689c4`). Every row below marked **port** is done and live, not planned. The fork
+tracked upstream's version exactly through 0.15.2; 1.0.0 was the first release on its
+own line, because the content here deliberately diverges.
+
+1.0.1 exists because of the cache rule in the row below it: two skill defects were
+fixed in content, and a version-keyed cache will not serve a content-only change. The
+fixes were a `description:` that reached every MCP host as the literal string `">-"`
+instead of the folded block scalar, and two skill `name:` fields that were display
+headings rather than slugs.
 
 Verified independently on each host rather than inferred from one:
 
 | Host | State | How it was checked |
 | --- | --- | --- |
-| Claude Code | 1.0.0 | Plugin cache force-re-extracted — the cache is version-keyed, so `plugin update` reported "already latest" while still serving pre-nativization content |
-| Codex | 1.0.0 | `codex plugin marketplace upgrade pstack`; clone at the release commit |
-| ChatGPT | 1.0.0 | Live on the wire at `https://pstack-mcp.pstack.workers.dev/mcp` — `serverInfo.version`, plus content assertions that the Origin/Graphite and Cursor-path references are gone |
-| Cowork | 1.0.0 | claude.ai marketplace synced to the release commit; 47 skills, 2 agents |
+| Claude Code | 1.0.1 | Cache directory holds `1.0.1` and nothing else, so a new session cannot load the old copy; the shipped `lib.mjs` was then run against `make-bot-ui/SKILL.md` and folds its description to 188 characters of prose rather than `">-"` |
+| Codex | 1.0.1 | Marketplace clone at `b0689c4`; `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` both read 1.0.1 |
+| ChatGPT | 1.0.1 | Live on the wire at `https://pstack-mcp.pstack.workers.dev/mcp` — an `initialize` call returns `serverInfo.version` 1.0.1 |
+| Cowork | 1.0.1 | claude.ai marketplace stepped from `57f8714` to `b0689c4` in the UI on 2026-09-14. Carried over from that check, not re-verified since — claude.ai state cannot be read from the command line |
 
 Two host-sync behaviours worth knowing before trusting a "done":
 
