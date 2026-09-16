@@ -1,11 +1,13 @@
 # hookify rules
 
-Two guards for pstack's own configuration, written as [hookify](https://github.com/anthropics/claude-plugins-official) rules. Both encode a real failure rather than a hypothetical one.
+Four guards for releasing and configuring pstack, written as [hookify](https://github.com/anthropics/claude-plugins-official) rules. Both encode a real failure rather than a hypothetical one.
 
 | Rule | Event | Guards |
 |---|---|---|
 | `hookify.warn-pstack-config-canonical-path.local.md` | `all` | Writes to `~/.pstack/models.md` or the Cursor `.mdc` fallback |
 | `hookify.warn-setup-pstack-confirmation-gate.local.md` | `prompt` | `/setup-pstack` invocations, before anything is written |
+| `hookify.verify-plugin-cache-actually-moved.local.md` | `bash` | Plugin updates and pushes — a version-keyed cache ignores content-only changes |
+| `hookify.source-state-is-not-install-state.local.md` | `all` | Edits to the per-host status table, and reads that prove publication rather than installation |
 
 ## These are templates — copy them, don't point at them
 

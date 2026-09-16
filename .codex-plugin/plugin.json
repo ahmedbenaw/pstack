@@ -1,6 +1,6 @@
 {
   "name": "pstack",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "if you want to go fast, go deep first. pstack helps you write less, but higher quality code. rigorous agent workflows you can parallelize with confidence. Third-party plugin by Lauren Tan, ported from Cursor.",
   "author": {
     "name": "Lauren Tan"

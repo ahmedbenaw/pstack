@@ -41,7 +41,7 @@ Two things genuinely do not port, and the map says so rather than pretending:
 
 ## hookify rules
 
-[`hookify/`](hookify/) carries two guards for pstack's own configuration — one on writes to `~/.pstack/models.md`, one on `/setup-pstack` invocations. Both encode a real failure: a setup run that wrote only the Cursor `.mdc` fallback and left the canonical file missing for five days, and a run that nearly skipped the skill's mandatory confirmation gate.
+[`hookify/`](hookify/) carries four guards for configuring and releasing pstack — two on the model config (`~/.pstack/models.md` and `/setup-pstack`'s confirmation gate), two on the release path (a version-keyed cache that silently ignores content-only pushes, and status rows that record what was published rather than what is installed). Each encodes a failure that actually happened, named and dated in the rule itself.
 
 They are templates. hookify globs `.claude/hookify.*.local.md` relative to the session's working directory only — there is no global rule location — so a rule fires only once copied into the project's own `.claude/`. [`hookify/README.md`](hookify/README.md) has the detail.
 
