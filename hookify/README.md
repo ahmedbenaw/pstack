@@ -1,6 +1,6 @@
 # hookify rules
 
-Two guards for pstack's own configuration, written as [hookify](https://github.com/anthropics/claude-code) rules. Both encode a real failure rather than a hypothetical one.
+Two guards for pstack's own configuration, written as [hookify](https://github.com/anthropics/claude-plugins-official) rules. Both encode a real failure rather than a hypothetical one.
 
 | Rule | Event | Guards |
 |---|---|---|
