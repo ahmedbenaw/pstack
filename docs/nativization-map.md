@@ -36,7 +36,7 @@ Verified independently on each host rather than inferred from one:
 | Host | State | How it was checked |
 | --- | --- | --- |
 | Claude Code | 1.1.0 | `claude plugin update pstack@pstack` stepped 1.0.1 → 1.1.0, and the new cache directory holds `hookify/` with its three files. A restart is required before a session loads it |
-| Codex | 1.1.0 | `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` both read 1.1.0 on GitHub at `9f92da2`, read back through the API rather than trusted from the local clone |
+| Codex | 1.1.0 | `codex plugin marketplace upgrade pstack` moved the snapshot to `ade1b30` and re-materialized the install; `codex plugin list` reports 1.1.0 installed and enabled, and the cache carries `hookify/` |
 | ChatGPT | 1.0.1 | Deliberately not moved. An `initialize` call still returns `serverInfo.version` 1.0.1, which is correct — `mcp-server/` was not rebuilt or deployed, because `hookify/` is copied files rather than anything served over MCP |
 | Cowork | unknown | Not re-checked for this release. claude.ai state cannot be read from the command line, and the 2026-09-14 UI check saw `b0689c4`, which predates both 1.0.1 and 1.1.0 |
 
@@ -51,6 +51,14 @@ Two host-sync behaviours worth knowing before trusting a "done":
   copy: `1.0.1/` and `1.1.0/` now sit side by side. An earlier version of this table
   said the directory holds one version and nothing else — true when only one release
   had ever been installed, but not a rule.
+- **Codex and Claude Code differ here.** The same release left Claude Code holding both
+  version directories and left Codex holding only `1.1.0/`. Codex also re-materializes
+  the install from `codex plugin marketplace upgrade` alone; `codex plugin add pstack`
+  is not needed and in fact errors without a `@marketplace` qualifier.
+- **Check the install, not the source.** Reading a bumped manifest back from GitHub
+  proves what was published, not what is installed. This table once recorded Codex at
+  1.1.0 on that basis while `~/.codex/config.toml` still pinned `2af80cf` and the cache
+  still held `1.0.1/`. Each row names the per-host artifact it was read from.
 
 Upstream `cursor/plugins` has not touched `pstack/` since 0.15.2, so nothing is pending
 to merge as of this release.
