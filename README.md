@@ -39,6 +39,12 @@ Two things genuinely do not port, and the map says so rather than pretending:
   on a webhook. benny's *skills* are host-neutral and run anywhere; its runner has
   no equivalent, and on Claude Code the nearest thing is a scheduled task.
 
+## hookify rules
+
+[`hookify/`](hookify/) carries two guards for pstack's own configuration — one on writes to `~/.pstack/models.md`, one on `/setup-pstack` invocations. Both encode a real failure: a setup run that wrote only the Cursor `.mdc` fallback and left the canonical file missing for five days, and a run that nearly skipped the skill's mandatory confirmation gate.
+
+They are templates. hookify globs `.claude/hookify.*.local.md` relative to the session's working directory only — there is no global rule location — so a rule fires only once copied into the project's own `.claude/`. [`hookify/README.md`](hookify/README.md) has the detail.
+
 ## Versioning
 
 This fork tracked upstream's version exactly up to 0.15.2. Nativization makes the
