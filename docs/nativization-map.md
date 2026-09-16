@@ -15,28 +15,30 @@ Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-ser
 
 ## Status
 
-**Shipped as 1.1.0** (`9f92da2`). Every row below marked **port** is done and live,
+**Shipped as 1.2.0** (`775e3de`). Every row below marked **port** is done and live,
 not planned. The fork tracked upstream's version exactly through 0.15.2; 1.0.0 was the
 first release on its own line, because the content here deliberately diverges.
 
-Only 1.0.0 has a git tag and a GitHub release. 1.0.1 and 1.1.0 shipped by pushing
+Only 1.0.0 has a git tag and a GitHub release. 1.0.1, 1.1.0 and 1.2.0 shipped by pushing
 `main` with the manifests bumped, so they are identified by commit here rather than by
 a release link. An earlier version of this line linked to `releases/tag/v1.0.1`, which
 has never existed.
 
-Both exist because of the cache rule two bullets below the table: the cache is keyed by
+All three exist because of the cache rule below the table: the cache is keyed by
 version and will not serve a change that keeps the same number. 1.0.1 carried two skill
 fixes — a `description:` that reached every MCP host as the literal string `">-"`
 instead of the folded block scalar, and two skill `name:` fields that were display
 headings rather than slugs. 1.1.0 carries `hookify/`, two rules guarding pstack's own
-configuration, and is a minor rather than a patch because that content is additive.
+configuration. 1.2.0 adds two more, guarding the release path itself — both written
+from ways the 1.1.0 release actually went wrong. All are additive content; none of
+them changes a skill.
 
 Verified independently on each host rather than inferred from one:
 
 | Host | State | How it was checked |
 | --- | --- | --- |
-| Claude Code | 1.1.0 | `claude plugin update pstack@pstack` stepped 1.0.1 → 1.1.0, and the new cache directory holds `hookify/` with its three files. A restart is required before a session loads it |
-| Codex | 1.1.0 | `codex plugin marketplace upgrade pstack` moved the snapshot to `ade1b30` and re-materialized the install; `codex plugin list` reports 1.1.0 installed and enabled, and the cache carries `hookify/` |
+| Claude Code | 1.2.0 | `claude plugin update pstack@pstack` stepped 1.1.0 → 1.2.0; `~/.claude/plugins/cache/pstack/pstack/1.2.0/hookify/` holds all four rules. A restart is required before a session loads it |
+| Codex | 1.2.0 | `codex plugin marketplace upgrade pstack` moved the snapshot and re-materialized the install; `codex plugin list` reports 1.2.0 installed and enabled, with four rules in its cache |
 | ChatGPT | 1.0.1 | Deliberately not moved. An `initialize` call still returns `serverInfo.version` 1.0.1, which is correct — `mcp-server/` was not rebuilt or deployed, because `hookify/` is copied files rather than anything served over MCP |
 | Cowork | unknown | Not re-checked for this release. claude.ai state cannot be read from the command line, and the 2026-09-14 UI check saw `b0689c4`, which predates both 1.0.1 and 1.1.0 |
 
