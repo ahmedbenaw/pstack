@@ -15,25 +15,30 @@ Hosts: **CC** Claude Code · **CX** Codex · **GPT** ChatGPT connector (`mcp-ser
 
 ## Status
 
-**Shipped as [v1.0.1](https://github.com/ahmedbenaw/pstack/releases/tag/v1.0.1)**
-(`b0689c4`). Every row below marked **port** is done and live, not planned. The fork
-tracked upstream's version exactly through 0.15.2; 1.0.0 was the first release on its
-own line, because the content here deliberately diverges.
+**Shipped as 1.1.0** (`9f92da2`). Every row below marked **port** is done and live,
+not planned. The fork tracked upstream's version exactly through 0.15.2; 1.0.0 was the
+first release on its own line, because the content here deliberately diverges.
 
-1.0.1 exists because of the cache rule in the row below it: two skill defects were
-fixed in content, and a version-keyed cache will not serve a content-only change. The
-fixes were a `description:` that reached every MCP host as the literal string `">-"`
+Only 1.0.0 has a git tag and a GitHub release. 1.0.1 and 1.1.0 shipped by pushing
+`main` with the manifests bumped, so they are identified by commit here rather than by
+a release link. An earlier version of this line linked to `releases/tag/v1.0.1`, which
+has never existed.
+
+Both exist because of the cache rule two bullets below the table: the cache is keyed by
+version and will not serve a change that keeps the same number. 1.0.1 carried two skill
+fixes — a `description:` that reached every MCP host as the literal string `">-"`
 instead of the folded block scalar, and two skill `name:` fields that were display
-headings rather than slugs.
+headings rather than slugs. 1.1.0 carries `hookify/`, two rules guarding pstack's own
+configuration, and is a minor rather than a patch because that content is additive.
 
 Verified independently on each host rather than inferred from one:
 
 | Host | State | How it was checked |
 | --- | --- | --- |
-| Claude Code | 1.0.1 | Cache directory holds `1.0.1` and nothing else, so a new session cannot load the old copy; the shipped `lib.mjs` was then run against `make-bot-ui/SKILL.md` and folds its description to 188 characters of prose rather than `">-"` |
-| Codex | 1.0.1 | Marketplace clone at `b0689c4`; `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` both read 1.0.1 |
-| ChatGPT | 1.0.1 | Live on the wire at `https://pstack-mcp.pstack.workers.dev/mcp` — an `initialize` call returns `serverInfo.version` 1.0.1 |
-| Cowork | 1.0.1 | claude.ai marketplace stepped from `57f8714` to `b0689c4` in the UI on 2026-09-14. Carried over from that check, not re-verified since — claude.ai state cannot be read from the command line |
+| Claude Code | 1.1.0 | `claude plugin update pstack@pstack` stepped 1.0.1 → 1.1.0, and the new cache directory holds `hookify/` with its three files. A restart is required before a session loads it |
+| Codex | 1.1.0 | `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` both read 1.1.0 on GitHub at `9f92da2`, read back through the API rather than trusted from the local clone |
+| ChatGPT | 1.0.1 | Deliberately not moved. An `initialize` call still returns `serverInfo.version` 1.0.1, which is correct — `mcp-server/` was not rebuilt or deployed, because `hookify/` is copied files rather than anything served over MCP |
+| Cowork | unknown | Not re-checked for this release. claude.ai state cannot be read from the command line, and the 2026-09-14 UI check saw `b0689c4`, which predates both 1.0.1 and 1.1.0 |
 
 Two host-sync behaviours worth knowing before trusting a "done":
 
@@ -42,7 +47,10 @@ Two host-sync behaviours worth knowing before trusting a "done":
   on the card, not the toggle.
 - **Claude Code's plugin cache is keyed by version**, so content changes that keep the
   same version are not re-extracted. A content-only fix needs a version bump or a
-  forced reinstall.
+  forced reinstall. Updating to 1.1.0 also showed the cache does not replace the old
+  copy: `1.0.1/` and `1.1.0/` now sit side by side. An earlier version of this table
+  said the directory holds one version and nothing else — true when only one release
+  had ever been installed, but not a rule.
 
 Upstream `cursor/plugins` has not touched `pstack/` since 0.15.2, so nothing is pending
 to merge as of this release.
