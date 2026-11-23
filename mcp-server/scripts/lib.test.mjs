@@ -80,9 +80,11 @@ test("the content walk skips dependency and build directories", () => {
     fs.writeFileSync(path.join(root, skipped, "nested", "README.md"), "# drop me\n");
   }
 
-  const found = Object.keys(readTextFilesRecursive(root, root));
+  const files = readTextFilesRecursive(root, root);
+  const found = Object.keys(files);
 
-  assert.deepEqual(found, [path.join("real", "SKILL.md")]);
+  assert.deepEqual(found, ["real/SKILL.md"]);
+  assert.equal(files["real/SKILL.md"], "# keep me\n");
   for (const skipped of ["node_modules", "dist", ".git"]) {
     assert.ok(
       !found.some((f) => f.startsWith(skipped)),
@@ -90,4 +92,14 @@ test("the content walk skips dependency and build directories", () => {
     );
   }
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("the content walk preserves backslashes in POSIX filenames", { skip: path.sep === "\\" }, () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pstack-walk-"));
+  try {
+    fs.writeFileSync(path.join(root, "literal\\name.md"), "# literal\n");
+    assert.deepEqual(readTextFilesRecursive(root, root), { "literal\\name.md": "# literal\n" });
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
