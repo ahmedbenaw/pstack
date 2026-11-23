@@ -30,7 +30,7 @@ export function readTextFilesRecursive(dir, relativeTo) {
     if (entry.isDirectory()) {
       Object.assign(out, readTextFilesRecursive(full, relativeTo));
     } else if (/\.(md|tsv|sh|mjs|ts)$/.test(entry.name)) {
-      out[path.relative(relativeTo, full)] = fs.readFileSync(full, "utf8");
+      out[path.relative(relativeTo, full).split(path.sep).join("/")] = fs.readFileSync(full, "utf8");
     }
   }
   return out;
